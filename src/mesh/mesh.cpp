@@ -25,6 +25,8 @@
 #include "../coordinates/coordinates.hpp"
 #include "../hydro/hydro.hpp" 
 #include "../field/field.hpp"
+#include "../fft/athena_fft.hpp"
+#include "../fft/turbulence.hpp"
 #include "../bvals/bvals.hpp"
 #include "../eos/eos.hpp"
 #include "../parameter_input.hpp"
@@ -66,6 +68,8 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test)
   time = start_time;
   dt   = (FLT_MAX*0.4);
   nbnew=0; nbdel=0;
+
+  turb_flag = 0;
 
   nlim = pin->GetOrAddInteger("time","nlim",-1);
   ncycle = 0;
@@ -486,6 +490,8 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test)
   }
   pblock=pfirst;
 
+  if (turb_flag > 0)
+    ptrbd = new TurbulenceDriver(this, pin);
 }
 
 //----------------------------------------------------------------------------------------
@@ -511,6 +517,8 @@ Mesh::Mesh(ParameterInput *pin, IOWrapper& resfile, int mesh_test)
   nint_user_mesh_data_=0;
   nreal_user_mesh_data_=0;
   nuser_history_output_=0;
+
+  turb_flag = 0;
 
   nbnew=0; nbdel=0;
 
@@ -804,6 +812,9 @@ Mesh::Mesh(ParameterInput *pin, IOWrapper& resfile, int mesh_test)
 
   // clean up
   delete [] offset;
+
+  if (turb_flag > 0)
+    ptrbd = new TurbulenceDriver(this, pin);
 }
 
 //----------------------------------------------------------------------------------------
@@ -821,6 +832,7 @@ Mesh::~Mesh()
   delete [] ranklist;
   delete [] costlist;
   delete [] loclist;
+  if (turb_flag > 0) delete ptrbd;
   if(adaptive==true) { // deallocate arrays for AMR
     delete [] nref;
     delete [] nderef;
@@ -1146,6 +1158,10 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin)
         pmb=pmb->next;
       }
     }
+
+    // add perturbation from turbulence
+    if(turb_flag > 0) 
+      ptrbd->Driving();
 
     // prepare to receive conserved variables
     pmb = pblock;

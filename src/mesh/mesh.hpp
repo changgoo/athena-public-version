@@ -36,6 +36,8 @@ class Reconstruction;
 class Hydro;
 class Field;
 class EquationOfState;
+class FFTDriver;
+class TurbulenceDriver;
 
 //----------------------------------------------------------------------------------------
 //! \struct NeighborBlock
@@ -167,6 +169,8 @@ class Mesh {
   friend class MeshRefinement;
   friend class HydroSourceTerms;
   friend class Hydro;
+  friend class FFTDriver;
+  friend class TurbulenceDriver;
 #ifdef HDF5OUTPUT
   friend class ATHDF5Output;
 #endif
@@ -189,6 +193,9 @@ public:
   int nlim, ncycle;
   int nbtotal, nbnew, nbdel;
   bool adaptive, multilevel;
+
+  int turb_flag; // turbulence flag
+  TurbulenceDriver *ptrbd;
 
   MeshBlock *pblock;
 
