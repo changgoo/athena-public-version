@@ -36,6 +36,7 @@
 #include "outputs/outputs.hpp"
 #include "outputs/io_wrapper.hpp"
 #include "utils/utils.hpp"
+#include "fft/turbulence.hpp"
 
 // MPI/OpenMP headers
 #ifdef MPI_PARALLEL
@@ -342,6 +343,8 @@ int main(int argc, char *argv[])
       std::cout << "cycle=" << pmesh->ncycle << std::scientific <<std::setprecision(14)
                 << " time=" << pmesh->time << " dt=" << pmesh->dt <<std::endl;
     }
+
+    if(pmesh->turb_flag == 2) pmesh->ptrbd->Driving(); // driven turbulence
 
     ptlist->DoTaskList(pmesh);
 

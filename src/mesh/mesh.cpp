@@ -1159,7 +1159,7 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin)
       }
     }
 
-    // add perturbation from turbulence
+    // add perturbation from turbulence for decaying turbulence
     if(turb_flag > 0) 
       ptrbd->Driving();
 

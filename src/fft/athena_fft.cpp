@@ -58,7 +58,7 @@ FFTBlock::FFTBlock(FFTDriver *pfd, LogicalLocation iloc, int igid,
   b_out_ = new AthenaFFTIndex(orig_idx_);
 #endif
 
-  f_in_->PrintIndex();
+//  f_in_->PrintIndex();
 #ifdef FFT
   for(int i=0;i<3;i++){
     Nx[f_in_->iloc[i]]=f_in_->Nx[i];

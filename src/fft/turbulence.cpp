@@ -87,7 +87,8 @@ void TurbulenceDriver::Driving(void){
 
 // check driving time interval to generate new perturbation
   if(pm->time >= tdrive){
-    std::cout << "generating turbulence at " << pm->time << std::endl;
+    if(Globals::my_rank==0) 
+      std::cout << "generating turbulence at " << pm->time << std::endl;
     Generate();
     tdrive = pm->time + dtdrive;
 // if impulsive, dt = dtdrive
@@ -98,9 +99,9 @@ void TurbulenceDriver::Driving(void){
   }
 
 // if not impulsive, dt = pm->dt
-  Perturb(pm->dt);
-  return;
+  if(impulsive == false) Perturb(pm->dt);
 
+  return;
 }
 
 //----------------------------------------------------------------------------------------
@@ -337,11 +338,13 @@ void TurbulenceDriver::Perturb(Real dt){
   if (pm->turb_flag == 2) {
     // driven turbulence 
     de = dedt*dt;
-    std::cout << "driven turbulence with " << de << std::endl;
+    if(Globals::my_rank==0) 
+      std::cout << "driven turbulence with " << de << std::endl;
   } else {
     // decaying turbulence (all in one shot) 
     de = dedt;
-    std::cout << "decaying turbulence with " << de << std::endl;
+    if(Globals::my_rank==0) 
+      std::cout << "decaying turbulence with " << de << std::endl;
   }
   aa = 0.5*m[0];
   aa = std::max(aa,1.0e-20);
