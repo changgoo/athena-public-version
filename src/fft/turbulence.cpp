@@ -111,7 +111,7 @@ void TurbulenceDriver::Generate(void)
 {
   Mesh *pm=pmy_mesh_;
   FFTBlock *pfb = pmy_fb;
-  AthenaFFTPlan *plan = pfb->bplan_;
+  AthenaFFTPlan *plan = pfb->bplan_; //backward fft
 
   int nbs=nslist_[Globals::my_rank];
   int nbe=nbs+nblist_[Globals::my_rank]-1;
@@ -120,9 +120,9 @@ void TurbulenceDriver::Generate(void)
     AthenaArray<Real> &dv = vel[nv], dv_mb;
     AthenaFFTComplex *fv = pfb->in_;
 
-    PowerSpectrum(fv);
-
-    pfb->Execute(plan);
+    PowerSpectrum(fv);//place power spectrum fluctuations into fv=pfb->in_
+    
+    pfb->Execute(plan);//backward fft the power spectrum fluctuations
 
     for(int igid=nbs, nb=0;igid<=nbe;igid++, nb++){
       MeshBlock *pmb=pm->FindMeshBlock(igid);
@@ -140,25 +140,70 @@ void TurbulenceDriver::Generate(void)
 
 void TurbulenceDriver::PowerSpectrum(AthenaFFTComplex *amp){
   int i,j,k;
-  Real q1,q2,q3;
+  int bu;//burning variable
+  Real q1,q2,q3;//random numbers
   Real pcoeff;
   FFTBlock *pfb = pmy_fb;
   AthenaFFTIndex *idx = pfb->b_in_;
   int knx1=pfb->knx[0],knx2=pfb->knx[1],knx3=pfb->knx[2];
-// set random amplitudes with gaussian deviation 
-  for(k=0;k<knx3;k++){ 
-    for(j=0;j<knx2;j++){ 
-      for(i=0;i<knx1;i++){ 
-        q1=ran2(&rseed);
-        q2=ran2(&rseed);
-        q3=std::sqrt(-2.0*std::log(q1+1.e-20))*std::cos(2.0*PI*q2);
-        q1=ran2(&rseed);
-        long int kidx=pfb->GetIndex(i,j,k,idx);
-        amp[kidx][0] = q3*std::cos(2.0*PI*q1);
-        amp[kidx][1] = q3*std::sin(2.0*PI*q1);
+  int kNx1=pfb->kNx[0],kNx2=pfb->kNx[1],kNx3=pfb->kNx[2];
+  int gs1=-(pfb->kdisp[0]),gs2=-(pfb->kdisp[1]),gs3=-(pfb->kdisp[2]);
+  int ge1=kNx1+gs1;
+  int ge2=kNx2+gs2;
+  int ge3=kNx3+gs3;
+  int buk=kNx1*kNx2;
+  int buj=kNx1;
+  // set random amplitudes with gaussian deviation 
+  //global loop offset
+  for(k=gs3;k<knx3;k++) { 
+  //after knx3 everything would be burned
+  if (k<0) {
+    for(bu=0;bu<buk;bu++) {
+      q1=ran2(&rseed);
+      q2=ran2(&rseed);
+      q1=ran2(&rseed);
+    }//burn random prng until k = 0 
+  } 
+  else {
+    for(j=gs2;j<ge2;j++){ 
+      if ((j<0) || (j>=knx2)) {
+	for(bu=0;bu<buj;bu++) {
+	  q1=ran2(&rseed);
+	  q2=ran2(&rseed);
+	  q1=ran2(&rseed);
+	} //burn random prng
       }
-    }
+      else {
+      for(i=gs1;i<ge1;i++) { 
+	if ((i<0) || (i>=knx1)) {
+	    q1=ran2(&rseed);
+	    q2=ran2(&rseed);
+	    q1=ran2(&rseed);
+	    //burn random prng
+	} 
+	else {
+	  q1=ran2(&rseed);
+	  q2=ran2(&rseed);
+	  q3=std::sqrt(-2.0*std::log(q1+1.e-20))*std::cos(2.0*PI*q2);
+	  q1=ran2(&rseed);
+	  long int kidx=pfb->GetIndex(i,j,k,idx);
+	  amp[kidx][0] = q3*std::cos(2.0*PI*q1);
+	  amp[kidx][1] = q3*std::sin(2.0*PI*q1);
+	}//i else
+      }//i loop
+      }//j else
+    }//j loop
+  }//k else
+}//k loop
+
+  for(k=knx3;k<ge3;k++) {
+    for(bu=0;bu<buk;bu++) {
+      q1=ran2(&rseed);
+      q2=ran2(&rseed);
+      q1=ran2(&rseed);
+    }//burn random prng until k ends 
   }
+
 
 // set power spectrum: only power-law 
   for(k=0;k<knx3;k++){ 
