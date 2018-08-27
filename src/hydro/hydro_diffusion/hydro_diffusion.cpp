@@ -267,7 +267,7 @@ void HydroDiffusion::NewHydroDiffusionDt(Real &dt_vis, Real &dt_cnd) {
   if (pmb_->block_size.nx3>1) fac = 1.0/6.0;
   else if (pmb_->block_size.nx2>1) fac = 0.25;
   else fac = 0.5;
-
+  
   dt_vis = (FLT_MAX);
   dt_cnd = (FLT_MAX);
 
@@ -320,9 +320,9 @@ void HydroDiffusion::NewHydroDiffusionDt(Real &dt_vis, Real &dt_cnd) {
       if ((kappa_iso > 0.0) || (kappa_aniso > 0.0)) {
         for (int i=is; i<=ie; ++i)
           dt_cnd = std::min(dt_cnd, static_cast<Real>(SQR(len(i))
-                                  *fac/(kappa_t(i)+TINY_NUMBER)));
+                *fac*pmb_->phydro->w(IDN,k,j,i)/(kappa_t(i)+TINY_NUMBER)));
       }
     }
-  }
+  }  
   return;
 }
